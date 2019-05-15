@@ -93,8 +93,6 @@ def recognize(sourceAudio,subfile):
             textfile.close()
             print("Could not request results from Google Speech Recognition service; {0}".format(e))
 
-def detect_scenes_cli(filepath, saveto):
-    os.system('scenedetect -i ' + filepath + ' scenedetect save-images -j -o '+saveto) 
 
 def detect(filename):
 
@@ -151,8 +149,6 @@ def detect(filename):
     finally:
         video_manager.release()
        
-def onDone():
-    os.removedirs(maindir+"/splitted")
 
 def main():
     # input 
@@ -195,7 +191,7 @@ def main():
     for filename in folderVideos:
         os.makedirs(folderVideos+ '/' + os.path.splitext(folderVideos+'/'+filename)[0])
         saveto = folderVideos+ '/' + os.path.splitext(folderVideos+'/'+filename)[0]
-        detect_scenes_cli(filename, saveto)
+        detect(filename, saveto)
 
-    onDone()
+
 main()
