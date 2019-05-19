@@ -12,18 +12,19 @@ import re
 import cv2
 import numpy
 import scenedetect
-from scenedetect.video_mananger import VideoManager
-from scenedetect.scene_manager import SceneManager
-from scenedetect.frame_timecode import FrameTimecode
-from scenedetect.stats_manager import StatsManager
-from scenedetect.detectors import ContentDetector
+from tkinter import Tk, Text, TOP, BOTH, X, N, LEFT
+from tkinter import *
+from tkinter import messagebox
+from tkinter.ttk import Frame, Label, Entry, Combobox, Button, Checkbutton, Radiobutton
 
 maindir = path.dirname(path.realpath(__file__))
 STATS_FILE_PATH = 'tempvideo.stats.csv'
 
 def downloads(urls, dest):
-    # yt = pytube.YouTube(url)
-    # yt.streams.first().download(dest)  # Download highest quality of video
+    # for url in urls:
+    #     print(url)
+    #     yt = pytube.YouTube(url)
+    #     yt.streams.first().download(dest)  # Download highest quality of video
     os.chdir(dest)
     ydl_opts = {}
     with youtube_dl.YoutubeDL(ydl_opts) as ydl:
@@ -44,6 +45,7 @@ def search(key, n):
 def editFilename(filename):
     newname = re.sub('[^a-zA-Z0-9-_*.\s]', '', filename)
     newname = str.replace(newname," ","-")
+    newname = str.replace(newname,"_","-")
     return newname
 def trimFilename(path):
     for filename in os.listdir(path):
@@ -66,106 +68,121 @@ def splitVideo(path, folderAudiosSplitted):
         cmd = "ffmpeg -i "+filedir + " -f segment -segment_time 10 -c copy "+foldername+"/out%03d.wav"
         os.system(cmd)
 
-def recognize(sourceAudio,subfile):
+def recognize(sourceAudio,subfile, lg):
     r = sr.Recognizer()
     mysource = sr.AudioFile(sourceAudio)
-    
+    submain = ""
     with mysource as source:
-        
         try:
             # for testing purposes, we're just using the default API key
             # to use another API key, use `r.recognize_google(audio, key="GOOGLE_SPEECH_RECOGNITION_API_KEY")`
             # instead of `r.recognize_google(audio)`
             audio = r.record(source)
-            sub = r.recognize_google(audio, language = "en-US")
-            textfile = open(subfile,"a")
-            textfile.write(sub + " | ")
-            textfile.close()
+            sub = r.recognize_google(audio, language = lg)
+            submain = submain + " " + sub
 
         except sr.UnknownValueError:
-            textfile = open(subfile,"a")
-            textfile.write(sub + " Google Speech Recognition could not understand audio!! ")
-            textfile.close()
-            print("Google Speech Recognition could not understand audio")
-        except sr.RequestError as e:
-            textfile = open(subfile,"a")
-            textfile.write(sub + " Could not request results from Google Speech Recognition service; ")
-            textfile.close()
-            print("Could not request results from Google Speech Recognition service; {0}".format(e))
+            submain = submain
+           
+        except sr.RequestError:
+            submain = submain
+    textfile = open(subfile,"a")
+    textfile.write(submain)
+    textfile.close() 
+
+def detect_scenes_cli(filepath, saveto):
+    # option -j is export images with JPEG format
+    os.system('scenedetect -i ' + filepath + ' detect-content save-images -j -n 1 -o '+saveto) 
+
+# def detect(filename):
+
+#     # Create a video_manager point to video file testvideo.mp4. Note that multiple
+#     # videos can be appended by simply specifying more file paths in the list
+#     # passed to the VideoManager constructor. Note that appending multiple videos
+#     # requires that they all have the same frame size, and optionally, framerate.
+#     video_manager = VideoManager([filename])
+#     stats_manager = StatsManager()
+#     scene_manager = SceneManager(stats_manager)
+#     # Add ContentDetector algorithm (constructor takes detector options like threshold).
+#     scene_manager.add_detector(ContentDetector())
+#     base_timecode = video_manager.get_base_timecode()
+
+#     try:
+#         # If stats file exists, load it.
+#         if os.path.exists(STATS_FILE_PATH):
+#             # Read stats from CSV file opened in read mode:
+#             with open(STATS_FILE_PATH, 'r') as stats_file:
+#                 stats_manager.load_from_csv(stats_file, base_timecode)
+
+#         start_time = base_timecode + 20     # 00:00:00.667
+#         end_time = base_timecode + 20.0     # 00:00:20.000
+#         # Set video_manager duration to read frames from 00:00:00 to 00:00:20.
+#         video_manager.set_duration(start_time=start_time, end_time=end_time)
+
+#         # Set downscale factor to improve processing speed (no args means default).
+#         video_manager.set_downscale_factor()
+
+#         # Start video_manager.
+#         video_manager.start()
+
+#         # Perform scene detection on video_manager.
+#         scene_manager.detect_scenes(frame_source=video_manager, end_time=end_time)
 
 
-def detect(filename):
+#         # Obtain list of detected scenes.
+#         scene_list = scene_manager.get_scene_list(base_timecode)
+#         # Like FrameTimecodes, each scene in the scene_list can be sorted if the
+#         # list of scenes becomes unsorted.
 
-    # Create a video_manager point to video file testvideo.mp4. Note that multiple
-    # videos can be appended by simply specifying more file paths in the list
-    # passed to the VideoManager constructor. Note that appending multiple videos
-    # requires that they all have the same frame size, and optionally, framerate.
-    video_manager = VideoManager([filename])
-    stats_manager = StatsManager()
-    scene_manager = SceneManager(stats_manager)
-    # Add ContentDetector algorithm (constructor takes detector options like threshold).
-    scene_manager.add_detector(ContentDetector())
-    base_timecode = video_manager.get_base_timecode()
+#         print('List of scenes obtained:')
+#         for i, scene in enumerate(scene_list):
+#             print('    Scene %2d: Start %s / Frame %d, End %s / Frame %d' % (
+#                 i+1,
+#                 scene[0].get_timecode(), scene[0].get_frames(),
+#                 scene[1].get_timecode(), scene[1].get_frames(),))
 
-    try:
-        # If stats file exists, load it.
-        if os.path.exists(STATS_FILE_PATH):
-            # Read stats from CSV file opened in read mode:
-            with open(STATS_FILE_PATH, 'r') as stats_file:
-                stats_manager.load_from_csv(stats_file, base_timecode)
+#         # We only write to the stats file if a save is required:
+#         if stats_manager.is_save_required():
+#             with open(STATS_FILE_PATH, 'w') as stats_file:
+#                 stats_manager.save_to_csv(stats_file, base_timecode)
 
-        start_time = base_timecode + 20     # 00:00:00.667
-        end_time = base_timecode + 20.0     # 00:00:20.000
-        # Set video_manager duration to read frames from 00:00:00 to 00:00:20.
-        video_manager.set_duration(start_time=start_time, end_time=end_time)
-
-        # Set downscale factor to improve processing speed (no args means default).
-        video_manager.set_downscale_factor()
-
-        # Start video_manager.
-        video_manager.start()
-
-        # Perform scene detection on video_manager.
-        scene_manager.detect_scenes(frame_source=video_manager, end_time=end_time)
-
-
-        # Obtain list of detected scenes.
-        scene_list = scene_manager.get_scene_list(base_timecode)
-        # Like FrameTimecodes, each scene in the scene_list can be sorted if the
-        # list of scenes becomes unsorted.
-
-        print('List of scenes obtained:')
-        for i, scene in enumerate(scene_list):
-            print('    Scene %2d: Start %s / Frame %d, End %s / Frame %d' % (
-                i+1,
-                scene[0].get_timecode(), scene[0].get_frames(),
-                scene[1].get_timecode(), scene[1].get_frames(),))
-
-        # We only write to the stats file if a save is required:
-        if stats_manager.is_save_required():
-            with open(STATS_FILE_PATH, 'w') as stats_file:
-                stats_manager.save_to_csv(stats_file, base_timecode)
-
-    finally:
-        video_manager.release()
+#     finally:
+#         video_manager.release()
        
-
-def main():
+def Justdown(searchkey, stop):
     # input 
-    print('Nhập tên videos cần tìm: ')
-    search_key = input()
-    print('Nhập số videos tối đa: ')
-    n = input() 
+    search_key = searchkey
+    n = stop
     
     # prepare something to store videos + audios
     index = 1
     while (os.path.isdir(maindir+"/videos/download"+str(index))): index=index+1
     folderVideos = maindir + "/videos/download"+str(index)
     folderAudios = maindir + "/audios/download"+str(index)
-    if os.path.exists(maindir + "/splitted"):
-        os.removedirs(maindir + "/splitted")
-    os.makedirs(maindir + "/splitted")
+    os.mkdir(folderVideos)  
+    os.mkdir(folderAudios)
+ 
+
+
+    # main process
+
+    urls = search(search_key,int(n))
+    downloads(urls,folderVideos)
+
+def mainprocess(searchkey, stop, language):
+    # input 
+    search_key = searchkey
+    n = stop
+    
+    # prepare something to store videos + audios
+    index = 1
+    while (os.path.isdir(maindir+"/videos/download"+str(index))): index=index+1
+    folderVideos = maindir + "/videos/download"+str(index)
+    folderAudios = maindir + "/audios/download"+str(index)
     folderAudiosSplitted = maindir + "/splitted"
+    if (os.path.isdir(maindir + "/splitted")): 
+        shutil.rmtree(maindir + "/splitted")
+    os.mkdir(maindir + "/splitted")
     os.mkdir(folderVideos)  
     os.mkdir(folderAudios)
 
@@ -185,13 +202,46 @@ def main():
         subfile = folderAudios + "/" + folder + ".txt"
         for fileAudio in os.listdir(folderAudiosSplitted+"/"+folder):
             audioPath = folderAudiosSplitted+"/"+folder+"/"+fileAudio
-            recognize(audioPath ,subfile)
+            recognize(audioPath ,subfile, language)
 
     #DETECTSCENE
-    for filename in folderVideos:
-        os.makedirs(folderVideos+ '/' + os.path.splitext(folderVideos+'/'+filename)[0])
-        saveto = folderVideos+ '/' + os.path.splitext(folderVideos+'/'+filename)[0]
-        detect(filename, saveto)
+    for filename in os.listdir(folderVideos):
+        os.makedirs(folderVideos+ '/' +filename[:-(len(filename)-filename.rfind("."))])
+        saveto = folderVideos+ '/' +filename[:-(len(filename)-filename.rfind("."))]
+        detect_scenes_cli(filename, saveto)
+
+def mainprocessWithoutSub(searchkey, stop):
+    # input 
+    search_key = searchkey
+    n = stop
+    
+    # prepare something to store videos + audios
+    index = 1
+    while (os.path.isdir(maindir+"/videos/download"+str(index))): index=index+1
+    folderVideos = maindir + "/videos/download"+str(index)
+    folderAudios = maindir + "/audios/download"+str(index)
+    # if (os.path.isdir(maindir + "/splitted")): 
+    #     shutil.rmtree(maindir + "/splitted")
+    # folderAudiosSplitted = maindir + "/splitted"
+    # os.mkdir(maindir + "/splitted")
+    os.mkdir(folderVideos)  
+    os.mkdir(folderAudios)
 
 
-main()
+    # main process
+
+    urls = search(search_key,int(n))
+    downloads(urls,folderVideos)
+    trimFilename(folderVideos)
+    # video2Audio(folderVideos,folderAudios)
+    # splitVideo(folderAudios,folderAudiosSplitted)
+
+   
+    #DETECTSCENE
+    for filename in os.listdir(folderVideos):
+        saveto = folderVideos+ '/' + filename[:-(len(filename)-filename.rfind("."))]
+        os.makedirs(folderVideos+ '/' + filename[:-(len(filename)-filename.rfind("."))])
+        
+        detect_scenes_cli(filename, saveto)
+
+
