@@ -12,13 +12,35 @@ import re
 import cv2
 import numpy
 import scenedetect
-from tkinter import Tk, Text, TOP, BOTH, X, N, LEFT
-from tkinter import *
-from tkinter import messagebox
-from tkinter.ttk import Frame, Label, Entry, Combobox, Button, Checkbutton, Radiobutton
+import os
+import urllib.request
+import json
 
+
+
+
+cre = "AIzaSyCvvT_PUuE7uGTQ4PR5Y903UUGMrTJ7EO4"
 maindir = path.dirname(path.realpath(__file__))
-STATS_FILE_PATH = 'tempvideo.stats.csv'
+STATS_FILE_PATH = 'testpvideo.stats.csv'
+
+
+
+def getinfo(url, folderVideos):
+    id = getid(url)
+    data = urllib.request.urlopen("https://www.googleapis.com/youtube/v3/videos?part=id%2C+snippet&id="+id+"&key=" + cre).read()
+    title = "Title: "+ json.loads(data)["items"][0]["snippet"]["title"] 
+    author =  "\n\nAuthor: "+ json.loads(data)["items"][0]["snippet"]["channelTitle"]
+    desb = "\n\nDescription: "+ json.loads(data)["items"][0]["snippet"]["description"] 
+    publish = "\n\nPublished: " +json.loads(data)["items"][0]["snippet"]["publishedAt"] 
+    detail = title + author + publish +desb  
+    textfile = open(folderVideos+"/Details/"+title[7:len(title)]+".txt","w")
+    textfile.write(detail)
+    textfile.close() 
+    return detail
+
+def getid(url):
+    id = url[url.index("v=")+2:len(url)] 
+    return id
 
 def downloads(urls, dest):
     # for url in urls:
@@ -92,7 +114,7 @@ def recognize(sourceAudio,subfile, lg):
 
 def detect_scenes_cli(filepath, saveto):
     # option -j is export images with JPEG format
-    os.system('scenedetect -i ' + filepath + ' detect-content save-images -j -n 1 -o '+saveto) 
+    os.system('scenedetect -i ' + filepath + ' detect-content save-images -j -n 3 -o '+saveto) 
 
 # def detect(filename):
 
@@ -167,7 +189,10 @@ def Justdown(searchkey, stop):
     # main process
 
     urls = search(search_key,int(n))
+    
     downloads(urls,folderVideos)
+    for url in urls:
+        getinfo(url, folderVideos)
 
 def mainprocess(searchkey, stop, language):
     # input 
@@ -191,13 +216,16 @@ def mainprocess(searchkey, stop, language):
 
     urls = search(search_key,int(n))
     print(urls)
-
     downloads(urls,folderVideos)
     trimFilename(folderVideos)
     video2Audio(folderVideos,folderAudios)
     splitVideo(folderAudios,folderAudiosSplitted)
+    for url in urls:
+        getinfo(url, folderVideos)
+    
 
     #SUBBING
+    print("SUBBING... ")
     for folder in os.listdir(folderAudiosSplitted):
         subfile = folderAudios + "/" + folder + ".txt"
         for fileAudio in os.listdir(folderAudiosSplitted+"/"+folder):
@@ -229,10 +257,13 @@ def mainprocessWithoutSub(searchkey, stop):
 
 
     # main process
-
+    
     urls = search(search_key,int(n))
+   
     downloads(urls,folderVideos)
     trimFilename(folderVideos)
+    for url in urls:
+        getinfo(url, folderVideos)
     # video2Audio(folderVideos,folderAudios)
     # splitVideo(folderAudios,folderAudiosSplitted)
 
@@ -241,7 +272,6 @@ def mainprocessWithoutSub(searchkey, stop):
     for filename in os.listdir(folderVideos):
         saveto = folderVideos+ '/' + filename[:-(len(filename)-filename.rfind("."))]
         os.makedirs(folderVideos+ '/' + filename[:-(len(filename)-filename.rfind("."))])
-        
         detect_scenes_cli(filename, saveto)
 
 
