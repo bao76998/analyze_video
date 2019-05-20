@@ -25,7 +25,7 @@ STATS_FILE_PATH = 'testpvideo.stats.csv'
 
 
 
-def getinfo(url, folderVideos):
+def getinfo(url, folderdetails):
     id = getid(url)
     data = urllib.request.urlopen("https://www.googleapis.com/youtube/v3/videos?part=id%2C+snippet&id="+id+"&key=" + cre).read()
     title = "Title: "+ json.loads(data)["items"][0]["snippet"]["title"] 
@@ -33,7 +33,7 @@ def getinfo(url, folderVideos):
     desb = "\n\nDescription: "+ json.loads(data)["items"][0]["snippet"]["description"] 
     publish = "\n\nPublished: " +json.loads(data)["items"][0]["snippet"]["publishedAt"] 
     detail = title + author + publish +desb  
-    textfile = open(folderVideos+"/Details/"+title[7:len(title)]+".txt","w")
+    textfile = open(folderdetails+"/"+title[7:len(title)]+".txt","w")
     textfile.write(detail)
     textfile.close() 
     return detail
@@ -114,62 +114,63 @@ def recognize(sourceAudio,subfile, lg):
 
 def detect_scenes_cli(filepath, saveto):
     # option -j is export images with JPEG format
+    detect(filepath)
     os.system('scenedetect -i ' + filepath + ' detect-content save-images -j -n 3 -o '+saveto) 
 
-# def detect(filename):
+def detect(filename):
 
-#     # Create a video_manager point to video file testvideo.mp4. Note that multiple
-#     # videos can be appended by simply specifying more file paths in the list
-#     # passed to the VideoManager constructor. Note that appending multiple videos
-#     # requires that they all have the same frame size, and optionally, framerate.
-#     video_manager = VideoManager([filename])
-#     stats_manager = StatsManager()
-#     scene_manager = SceneManager(stats_manager)
-#     # Add ContentDetector algorithm (constructor takes detector options like threshold).
-#     scene_manager.add_detector(ContentDetector())
-#     base_timecode = video_manager.get_base_timecode()
+    # Create a video_manager point to video file testvideo.mp4. Note that multiple
+    # videos can be appended by simply specifying more file paths in the list
+    # passed to the VideoManager constructor. Note that appending multiple videos
+    # requires that they all have the same frame size, and optionally, framerate.
+    video_manager = VideoManager([filename])
+    stats_manager = StatsManager()
+    scene_manager = SceneManager(stats_manager)
+    # Add ContentDetector algorithm (constructor takes detector options like threshold).
+    scene_manager.add_detector(ContentDetector())
+    base_timecode = video_manager.get_base_timecode()
 
-#     try:
-#         # If stats file exists, load it.
-#         if os.path.exists(STATS_FILE_PATH):
-#             # Read stats from CSV file opened in read mode:
-#             with open(STATS_FILE_PATH, 'r') as stats_file:
-#                 stats_manager.load_from_csv(stats_file, base_timecode)
+    try:
+        # If stats file exists, load it.
+        if os.path.exists(STATS_FILE_PATH):
+            # Read stats from CSV file opened in read mode:
+            with open(STATS_FILE_PATH, 'r') as stats_file:
+                stats_manager.load_from_csv(stats_file, base_timecode)
 
-#         start_time = base_timecode + 20     # 00:00:00.667
-#         end_time = base_timecode + 20.0     # 00:00:20.000
-#         # Set video_manager duration to read frames from 00:00:00 to 00:00:20.
-#         video_manager.set_duration(start_time=start_time, end_time=end_time)
+        start_time = base_timecode + 20     # 00:00:00.667
+        end_time = base_timecode + 20.0     # 00:00:20.000
+        # Set video_manager duration to read frames from 00:00:00 to 00:00:20.
+        video_manager.set_duration(start_time=start_time, end_time=end_time)
 
-#         # Set downscale factor to improve processing speed (no args means default).
-#         video_manager.set_downscale_factor()
+        # Set downscale factor to improve processing speed (no args means default).
+        video_manager.set_downscale_factor()
 
-#         # Start video_manager.
-#         video_manager.start()
+        # Start video_manager.
+        video_manager.start()
 
-#         # Perform scene detection on video_manager.
-#         scene_manager.detect_scenes(frame_source=video_manager, end_time=end_time)
+        # Perform scene detection on video_manager.
+        scene_manager.detect_scenes(frame_source=video_manager, end_time=end_time)
 
 
-#         # Obtain list of detected scenes.
-#         scene_list = scene_manager.get_scene_list(base_timecode)
-#         # Like FrameTimecodes, each scene in the scene_list can be sorted if the
-#         # list of scenes becomes unsorted.
+        # Obtain list of detected scenes.
+        scene_list = scene_manager.get_scene_list(base_timecode)
+        # Like FrameTimecodes, each scene in the scene_list can be sorted if the
+        # list of scenes becomes unsorted.
 
-#         print('List of scenes obtained:')
-#         for i, scene in enumerate(scene_list):
-#             print('    Scene %2d: Start %s / Frame %d, End %s / Frame %d' % (
-#                 i+1,
-#                 scene[0].get_timecode(), scene[0].get_frames(),
-#                 scene[1].get_timecode(), scene[1].get_frames(),))
+        print('List of scenes obtained:')
+        for i, scene in enumerate(scene_list):
+            print('    Scene %2d: Start %s / Frame %d, End %s / Frame %d' % (
+                i+1,
+                scene[0].get_timecode(), scene[0].get_frames(),
+                scene[1].get_timecode(), scene[1].get_frames(),))
 
-#         # We only write to the stats file if a save is required:
-#         if stats_manager.is_save_required():
-#             with open(STATS_FILE_PATH, 'w') as stats_file:
-#                 stats_manager.save_to_csv(stats_file, base_timecode)
+        # We only write to the stats file if a save is required:
+        if stats_manager.is_save_required():
+            with open(STATS_FILE_PATH, 'w') as stats_file:
+                stats_manager.save_to_csv(stats_file, base_timecode)
 
-#     finally:
-#         video_manager.release()
+    finally:
+        video_manager.release()
        
 def Justdown(searchkey, stop):
     # input 
@@ -183,6 +184,8 @@ def Justdown(searchkey, stop):
     folderAudios = maindir + "/audios/download"+str(index)
     os.mkdir(folderVideos)  
     os.mkdir(folderAudios)
+    folderdetails = maindir + "/details/download"+str(index)
+   
  
 
 
@@ -192,7 +195,7 @@ def Justdown(searchkey, stop):
     
     downloads(urls,folderVideos)
     for url in urls:
-        getinfo(url, folderVideos)
+        getinfo(url, folderdetails)
 
 def mainprocess(searchkey, stop, language):
     # input 
@@ -207,9 +210,12 @@ def mainprocess(searchkey, stop, language):
     folderAudiosSplitted = maindir + "/splitted"
     if (os.path.isdir(maindir + "/splitted")): 
         shutil.rmtree(maindir + "/splitted")
+    folderdetails = maindir + "/details/download"+str(index)
     os.mkdir(maindir + "/splitted")
+    os.mkdir(folderdetails)
     os.mkdir(folderVideos)  
     os.mkdir(folderAudios)
+    
 
 
     # main process
@@ -221,7 +227,7 @@ def mainprocess(searchkey, stop, language):
     video2Audio(folderVideos,folderAudios)
     splitVideo(folderAudios,folderAudiosSplitted)
     for url in urls:
-        getinfo(url, folderVideos)
+        getinfo(url, folderdetails)
     
 
     #SUBBING
@@ -248,12 +254,17 @@ def mainprocessWithoutSub(searchkey, stop):
     while (os.path.isdir(maindir+"/videos/download"+str(index))): index=index+1
     folderVideos = maindir + "/videos/download"+str(index)
     folderAudios = maindir + "/audios/download"+str(index)
+    folderdetails = maindir + "/details/download"+str(index)
     # if (os.path.isdir(maindir + "/splitted")): 
     #     shutil.rmtree(maindir + "/splitted")
     # folderAudiosSplitted = maindir + "/splitted"
     # os.mkdir(maindir + "/splitted")
     os.mkdir(folderVideos)  
     os.mkdir(folderAudios)
+    
+    
+    os.mkdir(folderdetails)
+ 
 
 
     # main process
@@ -262,8 +273,9 @@ def mainprocessWithoutSub(searchkey, stop):
    
     downloads(urls,folderVideos)
     trimFilename(folderVideos)
+
     for url in urls:
-        getinfo(url, folderVideos)
+        getinfo(url, folderdetails)
     # video2Audio(folderVideos,folderAudios)
     # splitVideo(folderAudios,folderAudiosSplitted)
 
